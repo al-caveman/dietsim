@@ -19,6 +19,16 @@ def template(quantity, unit, calories, protein, carbs, fat):
             'fat'           : fat,
     }
 
+def banana(num):
+    return template(
+        quantity    = num,
+        unit        = 'medium bananas',
+        calories    = num * 105,
+        protein     = num * 1.3,
+        carbs       = num * 27,
+        fat         = num * .4,
+    )
+
 def cheese(spoons):
     spoon_g = 9.375
     return template(
@@ -42,7 +52,7 @@ def bread(pitas):
 
 def fool(servings):
     can_servings = 3
-    cans_num = servings * can_servings
+    cans_num = servings / can_servings
     return template(
         quantity    = cans_num,
         unit        = 'cans',
@@ -54,7 +64,7 @@ def fool(servings):
 
 def canned_fruit(servings):
     can_servings = 3
-    cans_num = servings * can_servings
+    cans_num = servings / can_servings
     return template(
         quantity    = cans_num,
         unit        = 'cans',
@@ -155,7 +165,9 @@ def protein_shake(scoops):
 
 # run sim
 random.seed(0)
+DAYS = 30
 FOODS = [
+    [banana         , 0, 10     ],
     [cheese         , 0, 20     ],
     [bread          , 0, 10     ],
     [fool           , 0, 12     ],
@@ -167,21 +179,20 @@ FOODS = [
     [milk           , 0, 1000   ],
     [boiled_eggs    , 0, 10     ],
 ]
-CALORIES_MAX = 2000
+CALORIES_MAX = 1900
+CALORIES_MIN = 1500
 PROTEIN_MIN = 120
 PROTEIN_MAX = 200
 CARBS_MAX = 77
 FAT_MAX = 69
-EPOCHS = 10000
 stockpiled_meals = []
-for e in range(0, EPOCHS):
+while(len(stockpiled_meals) < DAYS):
     calories = 0
     proteins = 0
     carbs = 0
     fat = 0
     random.shuffle(FOODS)
-    picked_foods = []
-    picked_values = []
+    picked_meals = []
     for food, arg_min, arg_max in FOODS:
         arg = random.randint(arg_min, arg_max)
         if arg == 0:
@@ -197,22 +208,64 @@ for e in range(0, EPOCHS):
             and carbs <= CARBS_MAX
             and fat <= FAT_MAX
         ):
-            picked_foods.append([food.__name__, arg])
-            picked_values.append(value)
+            picked_meals.append(value)
             if proteins >= PROTEIN_MAX:
                 break
-            elif proteins >= PROTEIN_MIN:
-                print(
-                    'cals:{}  prot:{}  carbs:{}  fat:{}'.format(
-                        calories,
-                        proteins,
-                        carbs,
-                        fat,
-                    )
-                )
-                #for i in range(0, len(picked_foods)):
-                #    print('   {}'.format(picked_foods[i]))
-                #    print('{}'.format(json.dumps(picked_values[i], indent=4)))
-                #print()
+            elif proteins >= PROTEIN_MIN and calories >= CALORIES_MIN:
+                stockpiled_meals.append(list(picked_meals))
         else:
             break
+
+# do some stats
+grand_calories = 0
+grand_proteins = 0
+grand_carbs    = 0
+grand_fat      = 0
+stockpile = {}
+for meal in stockpiled_meals:
+    calories = 0
+    proteins = 0
+    carbs    = 0
+    fat      = 0
+    for value in meal:
+        if value['name'] in stockpile:
+            stockpile[value['name']]['quantity'] += value['quantity']
+            stockpile[value['name']]['calories'] += value['calories']
+            stockpile[value['name']]['protein' ] += value['protein']
+            stockpile[value['name']]['carbs'   ] += value['carbs']
+            stockpile[value['name']]['fat'     ] += value['fat']
+        else:
+            stockpile[value['name']] = {
+                'quantity'  : value['quantity'],
+                'unit'      : value['unit'],
+                'calories'  : value['calories'],
+                'protein'   : value['protein'],
+                'carbs'     : value['carbs'],
+                'fat'       : value['fat'],
+            }
+        calories += value['calories']
+        proteins += value['protein']
+        carbs    += value['carbs']
+        fat      += value['fat']
+    print('\n==================================================')
+    print('kcals:{:.2f}  prot:{:.2f}  carbs:{:.2f}  fat:{:.2f}'.format(
+        calories, proteins, carbs, fat
+    ))
+    print(json.dumps(meal, indent=4))
+    grand_calories += calories
+    grand_proteins += proteins
+    grand_carbs    += carbs
+    grand_fat      += fat
+
+print('\n==================================================')
+print('average macros:')
+print('kcals:{:.2f}  prot:{:.2f}  carbs:{:.2f}  fat:{:.2f}'.format(
+        grand_calories / len(stockpiled_meals),
+        grand_proteins / len(stockpiled_meals),
+        grand_carbs / len(stockpiled_meals),
+        grand_fat / len(stockpiled_meals)
+    ))
+
+print('\n==================================================')
+print('stockpile:')
+print(json.dumps(stockpile, indent=4))
