@@ -1,0 +1,12 @@
+#!/usr/bin/python
+
+PATH_FOOD = 'foods/food.csv'
+
+with open(PATH_FOOD, 'r') as f:
+    header_fields = f.readline().strip().split(',')
+    rows = []
+    for line in f.readlines():
+        rows.append(
+            line.strip().split(',')
+        )
+        print(len(line.strip().split(',')))
