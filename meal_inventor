@@ -3,9 +3,11 @@ import csv
 
 PATH_FOOD = 'foods/food.csv'
 
+# load foods of interest
+foods = []
 with open(PATH_FOOD, 'r') as f:
     csvreader = csv.reader(f)
     header = csvreader.__next__()
     for row in csvreader:
-        print(row)
-        #print(len(row))
+        if row[1] == 'foundation_food':
+            foods.append(row)
